@@ -23,6 +23,7 @@ from where_is_stix_utils import *
 external_stylesheets = [dbc.themes.SOLAR] #lol
 app = dash.Dash(external_stylesheets=external_stylesheets) #__name__,
 server = app.server
+app.title='Where is Solar Orbiter?'
 
 # Figure styling
 tt=pio.templates['plotly']
@@ -93,10 +94,10 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
                end_date=dt.today()),
                 style={'width': '30%', 'display': 'inline-block','verticalAlign':'middle'}),
         html.Div([
-                dcc.Dropdown(id='spacecraft',options=[{'label': i, 'value': i} for i in spacecrafts],value=spacecrafts,multi=True)],
+                dcc.Dropdown(id='spacecraft',options=[{'label': i, 'value': i} for i in spacecrafts],value=spacecrafts,multi=True,placeholder='Spacecraft')],
                 style={'width': '30%', 'display': 'inline-block','verticalAlign':'middle'}),
         html.Div(
-                dcc.Dropdown(id='celestial bodies',options=[{'label': i, 'value': i} for i in bodies],value=[],multi=True),
+                dcc.Dropdown(id='celestial bodies',options=[{'label': i, 'value': i} for i in bodies],value=[],multi=True,placeholder='Planets'),
                       style={'width': '25%', 'display': 'inline-block','verticalAlign':'middle'}),
         html.Div(html.P('3D',style={'text-align':'right'}),style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
         html.Div([daq.BooleanSwitch(id='dim',on=True,color="#839496")],style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
