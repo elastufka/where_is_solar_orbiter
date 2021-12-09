@@ -4,6 +4,7 @@ from dash.dependencies import Input, Output #, State
 import dash_bootstrap_components as dbc
 #import dash_design_kit as ddk
 import dash_daq as daq
+import pygsheets
 
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -23,7 +24,7 @@ from where_is_stix_utils import *
 external_stylesheets = [dbc.themes.SOLAR] #lol
 app = dash.Dash(__name__,external_stylesheets=external_stylesheets) #__name__,
 server = app.server
-app.title='Where is Solar Orbiter?'
+app.title='Where is SOLO?'
 
 # Figure styling
 tt=pio.templates['plotly']
@@ -57,8 +58,18 @@ tab_selected_style = {
 spacecrafts=['SOLO','PSP','STEREO-A','BEPI']
 bodies=['Mars','Venus']
 cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightseagreen','mars':'firebrick','venus':'cyan'}
-df=pd.read_csv('data/trajectories.csv',header=[0,1])
-df.drop(columns=[('Unnamed: 0_level_0','Unnamed: 0_level_1')],inplace=True)
+
+#df=pd.read_csv('data/trajectories.csv',header=[0,1])
+#df.drop(columns=[('Unnamed: 0_level_0','Unnamed: 0_level_1')],inplace=True)
+#df[('Date','-')]=pd.to_datetime(df.Date['-'])
+
+gc = pygsheets.authorize(service_account_env_var = 'GDRIVE_API_CREDENTIALS')
+aa=gc.open('trajectories')
+df=aa[0].get_as_df(index_column=1)
+first_row=df.iloc[0]
+cols=pd.MultiIndex.from_arrays([np.array(df.keys()),np.array(first_row.values)])
+df.drop('',inplace=True)
+df.columns=cols
 df[('Date','-')]=pd.to_datetime(df.Date['-'])
 #new_tuples = df.index.map(lambda x: (x[0], pd.to_datetime(x[1])))
 #df.index = pd.MultiIndex.from_tuples(new_tuples, names=["Date", "-"])
