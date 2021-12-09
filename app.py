@@ -21,7 +21,7 @@ from where_is_stix_utils import *
 #import base64
 
 external_stylesheets = [dbc.themes.SOLAR] #lol
-app = dash.Dash(external_stylesheets=external_stylesheets) #__name__,
+app = dash.Dash(__name__,external_stylesheets=external_stylesheets) #__name__,
 server = app.server
 app.title='Where is Solar Orbiter?'
 
@@ -79,7 +79,7 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
 #        "by ", html.A("Erica Lastufka",href="https://github.com/elastufka/")]),style={'width':'70%','display': 'inline-block','verticalAlign':'middle'}),
 #    ])
 
-    ],fluid=True, className="py-3",style={'background-image': 'url(assets/so.png)','background-size':'35%','background-repeat':'no-repeat','background-position':'bottom right','margin-bottom':'0px','margin-top':'40px'}),className="p-3  rounded-3"),
+    ],fluid=True, className="py-3",style={'background-image': 'url("/assets/so.png")','background-size':'35%','background-repeat':'no-repeat','background-position':'bottom right','margin-bottom':'0px','margin-top':'40px'}),className="p-3  rounded-3"),
     dcc.Tabs([
     dcc.Tab(label='Orbit Tool',children=[
     html.Div([
