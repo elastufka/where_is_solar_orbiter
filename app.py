@@ -23,7 +23,7 @@ from where_is_stix_utils import *
 
 external_stylesheets = [dbc.themes.SOLAR] #lol
 app = dash.Dash(external_stylesheets=external_stylesheets) #__name__,
-
+server = app.server
 
 # Figure styling
 tt=pio.templates['plotly']
