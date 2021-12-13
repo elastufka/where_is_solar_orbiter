@@ -65,7 +65,7 @@ cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightsea
 
 gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
 aa=gc.open('trajectories')
-df=aa[0].get_as_df(index_column=1)
+df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
 first_row=df.iloc[0]
 cols=pd.MultiIndex.from_arrays([np.array(df.keys()),np.array(first_row.values)])
 df.drop('',inplace=True)
@@ -76,6 +76,8 @@ df[('Date','-')]=pd.to_datetime(df.Date['-'])
 df2=df.copy(deep=True)
 table_cols,table_data=datatable_settings_multiindex(df2)
 
+## About markdown
+mdlines=open('about.md').readlines()
 
 ########### layout
 
@@ -139,8 +141,32 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
     html.Div(children=["Copyright 2021 ",html.A("Erica Lastufka",href="https://github.com/elastufka/")]),#]),
     ],style=tab_style,selected_style=tab_selected_style),#]),
     dcc.Tab(label='About',children=[
-        html.Div(children=[html.P("This app gets spacecraft and celestial body data from the SPICE kernels.")],style={'padding': '1em'})],style=tab_style,selected_style=tab_selected_style)
-    ],style=tabs_styles), #wish I could just include a html page...
+        html.Div(children=[dcc.Markdown('''
+        ## Satellites
+        
+        | Full Name  | Abbreviation  |
+        | :--- | :--- |
+        | Solar Orbiter  | SOLO  |
+        | Parker Solar Probe  | PSP  |
+        |  Solar TErrestrial RElations Observatory (Ahead) | STEREO-A  |
+        | BepiColombo | BEPI |
+        
+        &nbsp;
+        
+        ## Data Sources
+        
+        Ultimately, all orbit trajectory data is derived from the [SPICE](https://naif.jpl.nasa.gov/naif/data.html) kernels. It is accessed using various Python wrappers.
+        
+        | Orbiting body  | Kernel source  |
+        | :--- | :--- |
+        | SOLO  | [SOCCI](https://repos.cosmos.esa.int/socci/projects/SPICE_KERNELS/repos/solar-orbiter/browse/kernels/ck) updated weekly |
+        | PSP  | [heliopy](https://docs.heliopy.org/en/0.5.3/spice.htmll) psp & psp-pred |
+        | STEREO-A | [heliopy](https://docs.heliopy.org/en/0.5.3/spice.html) stereo-a |
+        | BEPI | [heliopy](https://docs.heliopy.org/en/0.5.3/spice.html) bepi-pred |
+        | Venus | [spiceypy](https://spiceypy.readthedocs.io/en/master/) |
+        | Earth | [spiceypy](https://spiceypy.readthedocs.io/en/master/) |
+        | Mars | [spiceypy](https://spiceypy.readthedocs.io/en/master/) |'''),dcc.Markdown(mdlines)],style={'padding': '1em'})],style=tab_style,selected_style=tab_selected_style)
+    ],style=tabs_styles), #why does dash markdown not display tables in the .md file correctly?
         ])
 
 
