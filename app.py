@@ -119,10 +119,13 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
         html.Div(dcc.Graph(id='orbit'),style=imstyle),
     
     html.Div(children=[
-    html.H2(dbc.Alert('Data Table',color='secondary'),style={'width': '89%', 'display': 'inline-block','verticalAlign':'middle'}),
+    html.H2(dbc.Alert('Coordinates',color='secondary'),style={'width': '70%', 'display': 'inline-block','verticalAlign':'middle'}),
     html.Div(html.P('km',style={'text-align':'right'}),style={'width': '3%', 'display': 'inline-block','verticalAlign':'middle'}),
     html.Div([daq.BooleanSwitch(id='units',on=True,color="#839496")],style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
-    html.Div(html.P('AU',style={'text-align':'left'}),style={'width': '3%', 'display': 'inline-block','verticalAlign':'middle'})
+    html.Div(html.P('AU',style={'text-align':'left'}),style={'width': '3%', 'display': 'inline-block','verticalAlign':'middle'}), #do switch for cartesian or spherical also
+    html.Div(html.P('Cartesian',style={'text-align':'right'}),style={'width': '7%', 'display': 'inline-block','verticalAlign':'middle'}),
+    html.Div([daq.BooleanSwitch(id='coord_type',on=False,color="#839496")],style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
+    html.Div(html.P('Spherical',style={'text-align':'left'}),style={'width': '7%', 'display': 'inline-block','verticalAlign':'middle'})
     ]),
     html.Div(
     dash_table.DataTable(id='tbl',data=table_data,columns=table_cols,
@@ -172,33 +175,39 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
 
 @app.callback(
     [Output('orbit', 'figure'),Output('tbl','columns'),Output('tbl','data'),Output('date-picker-range','start_date'),Output('date-picker-range','end_date')],
-    [Input('dim','on'),Input('spacecraft','value'),Input('celestial bodies','value'),Input('units','on'),Input('date-picker-range','start_date'),Input('date-picker-range','end_date')])
+    [Input('dim','on'),Input('spacecraft','value'),Input('celestial bodies','value'),Input('units','on'),Input('coord_type','on'),Input('date-picker-range','start_date'),Input('date-picker-range','end_date')])
     
-def update_orbit(dim,spacecraft,cbodies,unit,start_date,end_date):
+def update_orbit(dim,spacecraft,cbodies,unit,coord_type,start_date,end_date):
     
     df0=df.where(df["Date"]["-"] >= start_date)
     dfc=df0.where(df0["Date"]["-"] <= end_date).dropna(how='all')
     ccols=['Date']
     
     skeys,bkeys=[],[]
+    
+    if coord_type:
+        k1,k2,k3='_r','_lat','_lon'
+    else:
+        k1,k2,k3='_x','_y','_z'
+        
     for s in spacecraft:
         skey=s.lower()
         skeys.append(skey)
-        ccols.append(skey+'_x')
-        ccols.append(skey+'_y')
-        ccols.append(skey+'_z')
+        ccols.append(skey+k1)
+        ccols.append(skey+k2)
+        ccols.append(skey+k3)
         
     for b in cbodies:
         bkey=b.lower()
         bkeys.append(bkey)
-        ccols.append(bkey+'_x')
-        ccols.append(bkey+'_y')
-        ccols.append(bkey+'_z')
+        ccols.append(bkey+k1)
+        ccols.append(bkey+k2)
+        ccols.append(bkey+k3)
     
     fig=go.Figure()
     
     if not dim:
-        hovertemp="x:%{x:.3f}, y:%{y:.3f}, z:%{z:.3f}<br>%{text}"
+        hovertemp="x:%{y:.3f}, y:%{x:.3f}, z:%{z:.3f}<br>%{text}"
         xplane=np.linspace(-1,1,10)
         yplane=np.linspace(-1,1,10)
         xplane,yplane=np.meshgrid(xplane,yplane)
@@ -224,7 +233,7 @@ def update_orbit(dim,spacecraft,cbodies,unit,start_date,end_date):
         fig.update_layout(scene=dict(xaxis_title='HEE_y (AU)',yaxis_title='HEE_x (AU)',zaxis=dict(title='HEE_z (AU)',range=[-.25,.25]),camera=camera),height=500)
         
     else:
-        hovertemp="x:%{x:.3f}, y:%{y:.3f}<br>%{text}"
+        hovertemp="x:%{y:.3f}, y:%{x:.3f}<br>%{text}"
         fig.add_shape(type="circle",
             xref="x", yref="y",
             x0=-1, y0=-1, x1=1, y1=1,
@@ -248,7 +257,7 @@ def update_orbit(dim,spacecraft,cbodies,unit,start_date,end_date):
             fig.update_yaxes(range=[1.1,-1.1])
         fig.update_layout(xaxis_title='HEE_y (AU)',yaxis_title='HEE_x (AU)',height=500)
         
-    newcols,new_data=datatable_settings_multiindex(dfc,cols=ccols,unit=unit)
+    newcols,new_data=datatable_settings_multiindex(dfc,cols=ccols,unit=unit,sphere=coord_type)
     
     return fig,newcols,new_data,start_date,end_date
         
