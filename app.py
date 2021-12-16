@@ -1,8 +1,7 @@
 import dash
 from dash import dash_table,dcc,html
-from dash.dependencies import Input, Output #, State
+from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
-#import dash_design_kit as ddk
 import dash_daq as daq
 import pygsheets
 
@@ -10,23 +9,20 @@ import plotly.graph_objects as go
 import plotly.io as pio
 #import plotly.colors
 #import plotly.express as px
-
-#from plotly.subplots import make_subplots
-
 import pandas as pd
 import numpy as np
 
 from datetime import datetime as dt
 from where_is_stix_utils import *
-#from collections import Counter
-#import base64
+
+######### setup
 
 external_stylesheets = [dbc.themes.SOLAR] #lol
-app = dash.Dash(__name__,external_stylesheets=external_stylesheets) #__name__,
+app = dash.Dash(__name__,external_stylesheets=external_stylesheets)
 server = app.server
 app.title='Where is SOLO?'
 
-# Figure styling
+########### Figure styling
 tt=pio.templates['plotly']
 tt.layout.paper_bgcolor="#839496"
 tt.layout.xaxis.showgrid=False
@@ -35,7 +31,7 @@ tt.layout.margin=dict(t=20,b=40)
 
 imstyle={'min-height':500} #starting height of image element
 
-#Tab styling
+########## Tab styling
 tabs_styles = {
     'height': '50px'
 }
@@ -54,10 +50,12 @@ tab_selected_style = {
     'padding': '10px'
 }
 
-#Data
+######## Data labels and colors
 spacecrafts=['SOLO','PSP','STEREO-A','BEPI']
 bodies=['Mars','Venus']
 cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightseagreen','mars':'firebrick','venus':'cyan'}
+
+####### Load the data
 
 #df=pd.read_csv('data/trajectories.csv',header=[0,1])
 #df.drop(columns=[('Unnamed: 0_level_0','Unnamed: 0_level_1')],inplace=True)
@@ -71,28 +69,19 @@ cols=pd.MultiIndex.from_arrays([np.array(df.keys()),np.array(first_row.values)])
 df.drop('',inplace=True)
 df.columns=cols
 df[('Date','-')]=pd.to_datetime(df.Date['-'])
-#new_tuples = df.index.map(lambda x: (x[0], pd.to_datetime(x[1])))
-#df.index = pd.MultiIndex.from_tuples(new_tuples, names=["Date", "-"])
 df2=df.copy(deep=True)
-table_cols,table_data=datatable_settings_multiindex(df2)
+table_cols,table_data=format_datatable(df2)
 
-## About markdown
+########### About markdown
 mdlines=open('about.md').readlines()
 
-########### layout
+########### app layout
 
 app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar Orbiter?", className="display-3"),
    html.P(
        "... and friends ",
        className="lead",
-   ),
-   #html.Hr(className="my-2"),
-#   html.Div([
-#        html.Div(html.P(children=[
-#        "by ", html.A("Erica Lastufka",href="https://github.com/elastufka/")]),style={'width':'70%','display': 'inline-block','verticalAlign':'middle'}),
-#    ])
-
-    ],fluid=True, className="py-3",style={'background-image': 'url("/assets/so.png")','background-size':'35%','background-repeat':'no-repeat','background-position':'bottom right','margin-bottom':'0px','margin-top':'40px'}),className="p-3  rounded-3"),
+   )],fluid=True, className="py-3",style={'background-image': 'url("/assets/so.png")','background-size':'35%','background-repeat':'no-repeat','background-position':'bottom right','margin-bottom':'0px','margin-top':'40px'}),className="p-3 rounded-3"),
     dcc.Tabs([
     dcc.Tab(label='Orbit Tool',children=[
     html.Div([
@@ -193,18 +182,16 @@ def update_orbit(dim,spacecraft,cbodies,unit,coord_type,start_date,end_date):
     for s in spacecraft:
         skey=s.lower()
         skeys.append(skey)
-        ccols.append(skey+k1)
-        ccols.append(skey+k2)
-        ccols.append(skey+k3)
+        for k in [k1,k2,k3]:
+            ccols.append(skey+k)
         
     for b in cbodies:
         bkey=b.lower()
         bkeys.append(bkey)
-        ccols.append(bkey+k1)
-        ccols.append(bkey+k2)
-        ccols.append(bkey+k3)
-    
-    fig=go.Figure()
+        for k in [k1,k2,k3]:
+            ccols.append(bkey+k)
+
+    fig=go.Figure() #can animate this eventually...
     
     if not dim:
         hovertemp="x:%{y:.3f}, y:%{x:.3f}, z:%{z:.3f}<br>%{text}"
@@ -249,7 +236,7 @@ def update_orbit(dim,spacecraft,cbodies,unit,coord_type,start_date,end_date):
         for b in bkeys:
             fig.add_trace(go.Scatter(x=dfc[b].y,y=dfc[b].x,line=dict(color=cdict[b]),name=b.capitalize(),text=dfc.Date,hovertemplate=hovertemp))
         
-        #fig.update_traces(projection_z=dict(show=True))
+
         fig.update_yaxes(scaleanchor='x',scaleratio=1)
         if 'mars' in bkeys:
             fig.update_yaxes(range=[2,-2])
@@ -257,9 +244,9 @@ def update_orbit(dim,spacecraft,cbodies,unit,coord_type,start_date,end_date):
             fig.update_yaxes(range=[1.1,-1.1])
         fig.update_layout(xaxis_title='HEE_y (AU)',yaxis_title='HEE_x (AU)',height=500)
         
-    newcols,new_data=datatable_settings_multiindex(dfc,cols=ccols,unit=unit,sphere=coord_type)
+    newcols,new_data=format_datatable(dfc,cols=ccols,unit=unit,sphere=coord_type)
     
-    return fig,newcols,new_data,start_date,end_date
+    return fig,newcols,new_data,start_date,end_date #need to return dates to element so it'll display the correct calendar month in DatePicker
         
 
 if __name__ == '__main__':
