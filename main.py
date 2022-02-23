@@ -61,7 +61,7 @@ cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightsea
 #df.drop(columns=[('Unnamed: 0_level_0','Unnamed: 0_level_1')],inplace=True)
 #df[('Date','-')]=pd.to_datetime(df.Date['-'])
 
-gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
+gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_APPLICATION_CREDENTIALS')
 aa=gc.open('trajectories')
 df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
 first_row=df.iloc[0]
