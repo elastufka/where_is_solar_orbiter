@@ -18,6 +18,7 @@ from where_is_stix_utils import *
 ######### setup
 
 external_stylesheets = [dbc.themes.SOLAR] #lol
+#meta_tags={'metas':}    html.Meta(property='og:image', content='/assets/screenshot.jpg') #so that this shows up when sharing
 app = dash.Dash(__name__,external_stylesheets=external_stylesheets)
 server = app.server
 app.title='Where is SOLO?'
@@ -29,7 +30,7 @@ tt.layout.xaxis.showgrid=False
 tt.layout.yaxis.showgrid=False
 tt.layout.margin=dict(t=20,b=40)
 
-imstyle={'min-height':500} #starting height of image element
+imstyle={'min-height':450} #starting height of image element
 
 ########## Tab styling
 tabs_styles = {
@@ -53,24 +54,14 @@ tab_selected_style = {
 ######## Data labels and colors
 spacecrafts=['SOLO','PSP','STEREO-A','BEPI']
 bodies=['Mars','Venus']
-cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightseagreen','mars':'firebrick','venus':'cyan'}
+jvis=['Earth','SOLO','STEREO-A']#,'BEPI','Mars','Venus']
+msizes=['STIX counts','GOES flux','STIX duration']
+cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightseagreen','mars':'firebrick','venus':'cyan','earth':'green'}
 
 ####### Load the data
 
-#df=pd.read_csv('data/trajectories.csv',header=[0,1])
-#df.drop(columns=[('Unnamed: 0_level_0','Unnamed: 0_level_1')],inplace=True)
-#df[('Date','-')]=pd.to_datetime(df.Date['-'])
-
-gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
-aa=gc.open('trajectories')
-df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
-first_row=df.iloc[0]
-cols=pd.MultiIndex.from_arrays([np.array(df.keys()),np.array(first_row.values)])
-df.drop('',inplace=True)
-df.columns=cols
-df[('Date','-')]=pd.to_datetime(df.Date['-'])
-df2=df.copy(deep=True)
-table_cols,table_data=format_datatable(df2)
+df,table_cols,table_data,fdf,table_cols2,table_data2 = load_data()
+page_size=20
 
 ########### About markdown
 mdlines=open('about.md').readlines()
@@ -132,8 +123,46 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
          'width': '20%','fontWeight':'bold'}], export_format='csv'),style={'padding':'10px'}),
     html.Div(children=["Copyright 2021 ",html.A("Erica Lastufka",href="https://github.com/elastufka/")]),#]),
     ],style=tab_style,selected_style=tab_selected_style),#]),
+    dcc.Tab(label='Solar Flares',id='flare_tab',value='flare',children=[
+    html.Div([
+    html.Div(children=[html.P("Show only jointly visible flares: "),dcc.Checklist(id='jointvis',
+    options=[{'label': i, 'value': i} for i in jvis],
+    value=['Earth', 'SOLO'],inputStyle={"margin-right": "5px"},
+    labelStyle={'display': 'inline-block','padding-right':'.5em'})],style={'width': '50%', 'display': 'inline-block','verticalAlign':'middle'}),
+    html.Div(children=[html.P("Marker sizing: "),dcc.RadioItems(id='msize',
+    options=[{'label': i, 'value': i} for i in msizes],
+    value='STIX counts',inputStyle={"margin-right": "5px"},labelStyle={'display': 'inline-block','padding-right':'.5em'})],style={'width': '50%', 'display': 'inline-block','verticalAlign':'middle'}),
+        html.Div(dcc.Graph(id='flares'),style=imstyle),
+        
+        html.Div(children=[
+        html.H2(dbc.Alert('Flare Data',color='secondary'),style={'width': '60%', 'display': 'inline-block','verticalAlign':'middle'}),
+        html.P('results per page',style={'width': '10%', 'display': 'inline-block','verticalAlign':'middle','margin-left':'20px'}),
+        dcc.Input(id='nresults',type='number',value=page_size,style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
+        html.P('limit plot results',style={'text-align':'right','width': '10%', 'display': 'inline-block','verticalAlign':'middle'}),
+        daq.BooleanSwitch(id='limit',on=False,color="#839496",style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
+        ]),
+    html.Div(
+    dash_table.DataTable(id='tbl2',data=table_data2,columns=table_cols2,
+    page_size=page_size,
+    sort_action="native",
+    #sort_mode="multi",
+    style_cell={'textAlign': 'left'},
+    style_as_list_view=True,
+    style_header={
+        'backgroundColor': 'rgb(131, 148, 150)',
+        'color': 'white','whiteSpace':'normal'},
+    style_data={
+        'backgroundColor': 'rgb(7, 54, 66)',
+        'color': 'rgb(131, 148, 150)'},
+    style_cell_conditional=[
+        {'if': {'column_id': 'Date'},
+         'width': '20%','fontWeight':'bold'}], export_format='csv'),style={'padding':'10px'}),
+    html.Div(children=["Copyright 2021 ",html.A("Erica Lastufka",href="https://github.com/elastufka/")]),
+    ])],style=tab_style, selected_style=tab_selected_style), #why does dash markdown not display tables in the .md file correctly?
     dcc.Tab(label='About',children=[
         html.Div(children=[dcc.Markdown('''
+        # Trajectories
+        
         ## Satellites
         
         | Full Name  | Abbreviation  |
@@ -158,8 +187,7 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
         | Venus | [spiceypy](https://spiceypy.readthedocs.io/en/master/) |
         | Earth | [spiceypy](https://spiceypy.readthedocs.io/en/master/) |
         | Mars | [spiceypy](https://spiceypy.readthedocs.io/en/master/) |'''),dcc.Markdown(mdlines)],style={'padding': '1em'})],style=tab_style,selected_style=tab_selected_style)
-    ],style=tabs_styles), #why does dash markdown not display tables in the .md file correctly?
-        ])
+        ]) ])
 
 
 @app.callback(
@@ -248,6 +276,41 @@ def update_orbit(dim,spacecraft,cbodies,unit,coord_type,start_date,end_date):
     
     return fig,newcols,new_data,start_date,end_date #need to return dates to element so it'll display the correct calendar month in DatePicker
         
+@app.callback([Output('tbl2','columns'),Output('tbl2','data'),Output('tbl2','page_size')], [Input('tbl2','columns'),Input('spacecraft','value'),Input('celestial bodies','value'),Input('date-picker-range','start_date'),Input('date-picker-range','end_date'),Input('flare_tab', 'value'),Input('jointvis', 'value'),Input('nresults','value')])
+def display_content(table_cols2,spacecraft, cbodies, start_date,end_date,selected_tab,jointvis,nresults):
+    #print(jointvis) #use to filter flare selection...
+    if selected_tab == 'flare':
+        fdf0=fdf.where(fdf["peak_utc_corrected"] >= start_date)
+        fdfc=fdf0.where(fdf0["peak_utc_corrected"] <= end_date).dropna(how='all')
+        for vis in jointvis:
+            if vis == 'Earth':
+                fdfc=fdfc.where(~np.isnan(fdfc['hpc_x'])).dropna(how='all')
+            if vis == 'SOLO':
+                fdfc=fdfc.where(~np.isnan(fdfc['peak_counts_corrected'])).dropna(how='all')
+                if 'Earth' in jointvis:
+                    fdfc=fdfc.where(~np.isnan(fdfc['rotated_x_arcsec'])).dropna(how='all')
+            if vis == 'STEREO-A':
+                fdfc=fdfc.where(~np.isnan(fdfc['stereo_x'])).dropna(how='all')
+        if 'STEREO-A' not in spacecraft: #remove these columns
+            print(fdfc.keys())
+            fdfc.drop(columns=['stereo_x','stereo_y','stereo_rsun_apparent'],inplace=True)
+            table_cols2=get_flaretable_columns(fdfc)
+        table_data2 = fdfc.to_dict('records')
+        return table_cols2,table_data2,nresults#,locations_on_disk(fdfc, spacecraft,cbodies,msize=msize,nresults=nresults,limit=limit)
+    return [],[]#,{}
+    
+@app.callback(Output('flares', 'figure'), [Input('flare_tab', 'value'),Input('tbl2','data'),Input('tbl2','sort_by'),Input('spacecraft','value'),Input('celestial bodies','value'),Input('msize', 'value'),Input('nresults','value'),Input('limit','on')])
+def display_content(selected_tab,table_data,sortby,spacecraft, cbodies,msize,nresults,limit):
+    '''take input for figure directly from data table, so any sorting is reflected '''
+    table_df=pd.DataFrame(table_data)
+    if sortby is not None and limit:
+        asc=True
+        if sortby[0]['direction']!='asc':
+            asc=False
+        table_df=table_df.sort_values(sortby[0]['column_id'],ascending=asc).head(nresults)
+    if selected_tab == 'flare':
+        return locations_on_disk(table_df, spacecraft,cbodies,msize=msize)
+    return {}
 
 if __name__ == '__main__':
     app.run_server(debug=True)
