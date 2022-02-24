@@ -322,4 +322,4 @@ def display_content(selected_tab,table_data,sortby,spacecraft, cbodies,msize,nre
     return {}
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
