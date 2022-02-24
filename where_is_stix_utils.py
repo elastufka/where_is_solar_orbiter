@@ -3,40 +3,65 @@ from dash.dash_table.Format import Format,Scheme
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import pygsheets
+#import pygsheets
 import pandas as pd
+import google.auth
+#from pprint import pprint
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 def load_data():
-    gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
-    aa=gc.open('trajectories')
-    df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
-    first_row=df.iloc[0]
-    cols=pd.MultiIndex.from_arrays([np.array(df.keys()),np.array(first_row.values)])
-    df.drop('',inplace=True)
-    df.columns=cols
-    df[('Date','-')]=pd.to_datetime(df.Date['-'])
-    df2=df.copy(deep=True)
-    table_cols,table_data=format_datatable(df2)
+    credentials, project = google.auth.default()
+    spreadsheet_id = "1ci0EoYK69LiO3W83TDeTZtn8JIzDLtJd4dlCn7qsvJA"
+    ranges = ['trajectories!A1:W','flares!A1:BG','fit!E1:J']
 
-    ### load flare data
-    fdf=aa[1].get_as_df(index_column=1,include_tailing_empty=False)
-    ##and fit
-    fitdf=aa[2].get_as_df(index_column=1,include_tailing_empty=False)
-    excl_cols=['LC0_BKG','_id','goes','peak_UTC','CFL_X_arcsec','CFL_Y_arcsec','total_signal_counts','total_counts','peak_counts','flare_id','GOES_flux','LC0_peak_counts_4sec','solo_r','peak_utc','date_obs','hpc_bbox','frm_identifier','fl_peaktempunit','fl_peakemunit','fl_peakflux','fl_peakfluxunit','fl_peakem','fl_peaktemp','obs_dataprepurl','gs_thumburl','x_px','y_px','rotated_x_px','rotated_y_px','visible_from_SOLO','start_unix','end_unix','STIX_AIA_timedelta','STIX_AIA_timedelta_abs','stereo_z','x_arcsec','y_arcsec','x_deg','y_deg']
-    fdf.drop(columns=excl_cols,inplace=True)
-    fdf.drop_duplicates(subset=['peak_utc_corrected','event_peaktime'],inplace=True) #just in case any ssw latest events/flare detective results overlap
-    imlinks=[f"[image]({imurl})" if imurl != '' else '' for imurl in fdf.gs_imageurl]
-    movlinks=[f"[movie]({imurl})" if imurl != '' else '' for imurl in fdf.movie_url]
-    fdf['frm_name']=[n[:n.find('-')] for n in fdf.frm_name] #shorten it
-    fdf['AIA image_links']=imlinks
-    fdf['AIA movie_links']=movlinks
-    fdf=fdf.apply(pd.to_numeric,errors='ignore')
-    fdf['event_peaktime']=pd.to_datetime(fdf.event_peaktime).astype(str)
-    fdf['peak_utc_corrected']=pd.to_datetime(fdf.peak_utc_corrected).astype(str) #for 0 padding of hour...
-    fdf.drop(columns=['gs_imageurl','movie_url'],inplace=True)
-    fdf['goes_proxy']=goes_proxy(fitdf,fdf.peak_counts_corrected)
-    table_cols2 = get_flaretable_columns(fdf)
-    table_data2 = fdf.to_dict('records')
+    try:
+        service = build("sheets", "v4", credentials=credentials)
+        sheet = service.spreadsheets()
+        result = sheet.values().get(spreadsheetId=spreadsheet_id,
+                                    range=ranges[0]).execute()
+        values = result.get('values', [])
+        print(values[:3])
+    except HttpError as err:
+        print(err)
+    
+    df=pd.DataFrame(values)
+    fdf=df
+    table_cols=df.columns
+    table_data=df.values
+    table_cols=df.columns
+    table_data=df.values
+    
+#    gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
+#    aa=gc.open('trajectories')
+#    df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
+#    first_row=df.iloc[0]
+#    cols=pd.MultiIndex.from_arrays([np.array(df.keys()),np.array(first_row.values)])
+#    df.drop('',inplace=True)
+#    df.columns=cols
+#    df[('Date','-')]=pd.to_datetime(df.Date['-'])
+#    df2=df.copy(deep=True)
+#    table_cols,table_data=format_datatable(df2)
+#
+#    ### load flare data
+#    fdf=aa[1].get_as_df(index_column=1,include_tailing_empty=False)
+#    ##and fit
+#    fitdf=aa[2].get_as_df(index_column=1,include_tailing_empty=False)
+#    excl_cols=['LC0_BKG','_id','goes','peak_UTC','CFL_X_arcsec','CFL_Y_arcsec','total_signal_counts','total_counts','peak_counts','flare_id','GOES_flux','LC0_peak_counts_4sec','solo_r','peak_utc','date_obs','hpc_bbox','frm_identifier','fl_peaktempunit','fl_peakemunit','fl_peakflux','fl_peakfluxunit','fl_peakem','fl_peaktemp','obs_dataprepurl','gs_thumburl','x_px','y_px','rotated_x_px','rotated_y_px','visible_from_SOLO','start_unix','end_unix','STIX_AIA_timedelta','STIX_AIA_timedelta_abs','stereo_z','x_arcsec','y_arcsec','x_deg','y_deg']
+#    fdf.drop(columns=excl_cols,inplace=True)
+#    fdf.drop_duplicates(subset=['peak_utc_corrected','event_peaktime'],inplace=True) #just in case any ssw latest events/flare detective results overlap
+#    imlinks=[f"[image]({imurl})" if imurl != '' else '' for imurl in fdf.gs_imageurl]
+#    movlinks=[f"[movie]({imurl})" if imurl != '' else '' for imurl in fdf.movie_url]
+#    fdf['frm_name']=[n[:n.find('-')] for n in fdf.frm_name] #shorten it
+#    fdf['AIA image_links']=imlinks
+#    fdf['AIA movie_links']=movlinks
+#    fdf=fdf.apply(pd.to_numeric,errors='ignore')
+#    fdf['event_peaktime']=pd.to_datetime(fdf.event_peaktime).astype(str)
+#    fdf['peak_utc_corrected']=pd.to_datetime(fdf.peak_utc_corrected).astype(str) #for 0 padding of hour...
+#    fdf.drop(columns=['gs_imageurl','movie_url'],inplace=True)
+#    fdf['goes_proxy']=goes_proxy(fitdf,fdf.peak_counts_corrected)
+#    table_cols2 = get_flaretable_columns(fdf)
+#    table_data2 = fdf.to_dict('records')
     return df,table_cols,table_data,fdf,table_cols2,table_data2
 
 def format_datatable(df, flatten_char = '_',cols=False,unit=False,sphere=False):
