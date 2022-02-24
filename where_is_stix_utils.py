@@ -11,7 +11,7 @@ from googleapiclient.errors import HttpError
 def load_data():
     credentials, project = google.auth.default()
     spreadsheet_id = "1ci0EoYK69LiO3W83TDeTZtn8JIzDLtJd4dlCn7qsvJA"
-    ranges = ['trajectories!B1:W','flares!E1,:BG','fit!E1:J']
+    ranges = ['trajectories!B1:W','flares!B1:BG','fit!E1:J']
 
     try:
         service = build("sheets", "v4", credentials=credentials)
