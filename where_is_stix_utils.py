@@ -3,17 +3,15 @@ from dash.dash_table.Format import Format,Scheme
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-#import pygsheets
 import pandas as pd
 import google.auth
-#from pprint import pprint
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 def load_data():
     credentials, project = google.auth.default()
     spreadsheet_id = "1ci0EoYK69LiO3W83TDeTZtn8JIzDLtJd4dlCn7qsvJA"
-    ranges = ['trajectories!B1:W','flares!B1:BG','fit!E1:J']
+    ranges = ['trajectories!B1:W','flares!E1,:BG','fit!E1:J']
 
     try:
         service = build("sheets", "v4", credentials=credentials)
@@ -42,26 +40,18 @@ def load_data():
     
 def process_df(df,i):
     '''do the processing for various dataframes'''
-    #    gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
-    #    aa=gc.open('trajectories')
-    #    df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
     if i==0:
         first_row=df.iloc[0]
         second_row=df.iloc[1]
         cols=pd.MultiIndex.from_arrays([np.array(first_row.values),np.array(second_row.values)])
-        #df.drop('',inplace=True)
         df.columns=cols
         #drop header rows
         df.drop([0,1],inplace=True)
         df=df.apply(pd.to_numeric,errors='ignore')
         df[('Date','-')]=pd.to_datetime(df.Date['-'])
-        
-    #    df2=df.copy(deep=True)
-    #    table_cols,table_data=format_datatable(df2)
-#
+
 #    ### load flare data
     elif i==1:
-        #fdf=aa[1].get_as_df(index_column=1,include_tailing_empty=False)
         excl_cols=['LC0_BKG','_id','goes','peak_UTC','CFL_X_arcsec','CFL_Y_arcsec','total_signal_counts','total_counts','peak_counts','flare_id','GOES_flux','LC0_peak_counts_4sec','solo_r','peak_utc','date_obs','hpc_bbox','frm_identifier','fl_peaktempunit','fl_peakemunit','fl_peakflux','fl_peakfluxunit','fl_peakem','fl_peaktemp','obs_dataprepurl','gs_thumburl','x_px','y_px','rotated_x_px','rotated_y_px','visible_from_SOLO','start_unix','end_unix','STIX_AIA_timedelta','STIX_AIA_timedelta_abs','stereo_z','x_arcsec','y_arcsec','x_deg','y_deg']
         df.columns=df.iloc[0]
         df.drop([0],inplace=True)
@@ -76,9 +66,7 @@ def process_df(df,i):
         df['event_peaktime']=pd.to_datetime(df.event_peaktime).astype(str)
         df['peak_utc_corrected']=pd.to_datetime(df.peak_utc_corrected).astype(str) #for 0 padding of hour...
         df.drop(columns=['gs_imageurl','movie_url'],inplace=True)
-        #df['goes_proxy']=goes_proxy(fitdf,df.peak_counts_corrected)
-        #table_cols2 = get_flaretable_columns(fdf)
-        #table_data2 = fdf.to_dict('records')
+
     else:
         df.columns=df.iloc[0]
         df.drop([0],inplace=True)

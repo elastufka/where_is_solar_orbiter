@@ -3,12 +3,8 @@ from dash import dash_table,dcc,html
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import dash_daq as daq
-import pygsheets
-
 import plotly.graph_objects as go
 import plotly.io as pio
-#import plotly.colors
-#import plotly.express as px
 import pandas as pd
 import numpy as np
 
@@ -60,9 +56,8 @@ cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightsea
 
 ####### Load the data
 
-#df,table_cols,table_data,fdf,table_cols2,table_data2
 datagen = load_data()
-print('loaded from Sheets API')
+#print('loaded from Sheets API')
 df,fdf,fitdf=list(datagen)
 df2=df.copy(deep=True)
 table_cols,table_data=format_datatable(df2)
@@ -301,12 +296,11 @@ def display_content(table_cols2,spacecraft, cbodies, start_date,end_date,selecte
             if vis == 'STEREO-A':
                 fdfc=fdfc.where(~np.isnan(fdfc['stereo_x'])).dropna(how='all')
         if 'STEREO-A' not in spacecraft: #remove these columns
-            print(fdfc.keys())
             fdfc.drop(columns=['stereo_x','stereo_y','stereo_rsun_apparent'],inplace=True)
             table_cols2=get_flaretable_columns(fdfc)
         table_data2 = fdfc.to_dict('records')
-        return table_cols2,table_data2,nresults#,locations_on_disk(fdfc, spacecraft,cbodies,msize=msize,nresults=nresults,limit=limit)
-    return [],[]#,{}
+        return table_cols2,table_data2,nresults
+    return [],[]
     
 @app.callback(Output('flares', 'figure'), [Input('flare_tab', 'value'),Input('tbl2','data'),Input('tbl2','sort_by'),Input('spacecraft','value'),Input('celestial bodies','value'),Input('msize', 'value'),Input('nresults','value'),Input('limit','on')])
 def display_content(selected_tab,table_data,sortby,spacecraft, cbodies,msize,nresults,limit):
@@ -322,4 +316,4 @@ def display_content(selected_tab,table_data,sortby,spacecraft, cbodies,msize,nre
     return {}
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
