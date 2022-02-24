@@ -60,7 +60,16 @@ cdict={'solo':'darkgoldenrod','psp':'blue','stereo-a':'magenta','bepi':'lightsea
 
 ####### Load the data
 
-df,table_cols,table_data,fdf,table_cols2,table_data2 = load_data()
+#df,table_cols,table_data,fdf,table_cols2,table_data2
+datagen = load_data()
+print('loaded from Sheets API')
+df,fdf,fitdf=list(datagen)
+df2=df.copy(deep=True)
+table_cols,table_data=format_datatable(df2)
+fdf['goes_proxy']=goes_proxy(fitdf,fdf.peak_counts_corrected)
+table_cols2 = get_flaretable_columns(fdf)
+table_data2 = fdf.to_dict('records')
+
 page_size=20
 
 ########### About markdown

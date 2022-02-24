@@ -13,56 +13,77 @@ from googleapiclient.errors import HttpError
 def load_data():
     credentials, project = google.auth.default()
     spreadsheet_id = "1ci0EoYK69LiO3W83TDeTZtn8JIzDLtJd4dlCn7qsvJA"
-    ranges = ['trajectories!A1:W','flares!A1:BG','fit!E1:J']
+    ranges = ['trajectories!B1:W','flares!B1:BG','fit!E1:J']
 
     try:
         service = build("sheets", "v4", credentials=credentials)
         sheet = service.spreadsheets()
-        result = sheet.values().get(spreadsheetId=spreadsheet_id,
-                                    range=ranges[0]).execute()
-        values = result.get('values', [])
-        print(values[:3])
+        for i,range in enumerate(ranges):
+            result = sheet.values().get(spreadsheetId=spreadsheet_id,
+                                    range=range).execute()
+            values = result.get('values', [])
+            df=process_df(pd.DataFrame(values),i)
+            yield df
+
     except HttpError as err:
         print(err)
-    
-    df=pd.DataFrame(values)
-    fdf=df
-    table_cols=df.columns
-    table_data=df.values
-    table_cols=df.columns
-    table_data=df.values
-    
+        
+#def load_data_pygsheets():
 #    gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
 #    aa=gc.open('trajectories')
-#    df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
-#    first_row=df.iloc[0]
-#    cols=pd.MultiIndex.from_arrays([np.array(df.keys()),np.array(first_row.values)])
-#    df.drop('',inplace=True)
-#    df.columns=cols
-#    df[('Date','-')]=pd.to_datetime(df.Date['-'])
-#    df2=df.copy(deep=True)
-#    table_cols,table_data=format_datatable(df2)
+#    try:
+#        for i in range(3):
+#            df=aa[i].get_as_df(index_column=1,include_tailing_empty=False)
+#            df=process_df(df,i)
+#            yield df
+#
+#    except Exception as err:
+#        print(err)
+    
+def process_df(df,i):
+    '''do the processing for various dataframes'''
+    #    gc = pygsheets.authorize(service_account_env_var = 'GOOGLE_CREDENTIALS')
+    #    aa=gc.open('trajectories')
+    #    df=aa[0].get_as_df(index_column=1,include_tailing_empty=False)
+    if i==0:
+        first_row=df.iloc[0]
+        second_row=df.iloc[1]
+        cols=pd.MultiIndex.from_arrays([np.array(first_row.values),np.array(second_row.values)])
+        #df.drop('',inplace=True)
+        df.columns=cols
+        #drop header rows
+        df.drop([0,1],inplace=True)
+        df=df.apply(pd.to_numeric,errors='ignore')
+        df[('Date','-')]=pd.to_datetime(df.Date['-'])
+        
+    #    df2=df.copy(deep=True)
+    #    table_cols,table_data=format_datatable(df2)
 #
 #    ### load flare data
-#    fdf=aa[1].get_as_df(index_column=1,include_tailing_empty=False)
-#    ##and fit
-#    fitdf=aa[2].get_as_df(index_column=1,include_tailing_empty=False)
-#    excl_cols=['LC0_BKG','_id','goes','peak_UTC','CFL_X_arcsec','CFL_Y_arcsec','total_signal_counts','total_counts','peak_counts','flare_id','GOES_flux','LC0_peak_counts_4sec','solo_r','peak_utc','date_obs','hpc_bbox','frm_identifier','fl_peaktempunit','fl_peakemunit','fl_peakflux','fl_peakfluxunit','fl_peakem','fl_peaktemp','obs_dataprepurl','gs_thumburl','x_px','y_px','rotated_x_px','rotated_y_px','visible_from_SOLO','start_unix','end_unix','STIX_AIA_timedelta','STIX_AIA_timedelta_abs','stereo_z','x_arcsec','y_arcsec','x_deg','y_deg']
-#    fdf.drop(columns=excl_cols,inplace=True)
-#    fdf.drop_duplicates(subset=['peak_utc_corrected','event_peaktime'],inplace=True) #just in case any ssw latest events/flare detective results overlap
-#    imlinks=[f"[image]({imurl})" if imurl != '' else '' for imurl in fdf.gs_imageurl]
-#    movlinks=[f"[movie]({imurl})" if imurl != '' else '' for imurl in fdf.movie_url]
-#    fdf['frm_name']=[n[:n.find('-')] for n in fdf.frm_name] #shorten it
-#    fdf['AIA image_links']=imlinks
-#    fdf['AIA movie_links']=movlinks
-#    fdf=fdf.apply(pd.to_numeric,errors='ignore')
-#    fdf['event_peaktime']=pd.to_datetime(fdf.event_peaktime).astype(str)
-#    fdf['peak_utc_corrected']=pd.to_datetime(fdf.peak_utc_corrected).astype(str) #for 0 padding of hour...
-#    fdf.drop(columns=['gs_imageurl','movie_url'],inplace=True)
-#    fdf['goes_proxy']=goes_proxy(fitdf,fdf.peak_counts_corrected)
-#    table_cols2 = get_flaretable_columns(fdf)
-#    table_data2 = fdf.to_dict('records')
-    return df,table_cols,table_data,fdf,table_cols2,table_data2
+    elif i==1:
+        #fdf=aa[1].get_as_df(index_column=1,include_tailing_empty=False)
+        excl_cols=['LC0_BKG','_id','goes','peak_UTC','CFL_X_arcsec','CFL_Y_arcsec','total_signal_counts','total_counts','peak_counts','flare_id','GOES_flux','LC0_peak_counts_4sec','solo_r','peak_utc','date_obs','hpc_bbox','frm_identifier','fl_peaktempunit','fl_peakemunit','fl_peakflux','fl_peakfluxunit','fl_peakem','fl_peaktemp','obs_dataprepurl','gs_thumburl','x_px','y_px','rotated_x_px','rotated_y_px','visible_from_SOLO','start_unix','end_unix','STIX_AIA_timedelta','STIX_AIA_timedelta_abs','stereo_z','x_arcsec','y_arcsec','x_deg','y_deg']
+        df.columns=df.iloc[0]
+        df.drop([0],inplace=True)
+        df.drop(columns=excl_cols,inplace=True)
+        df.drop_duplicates(subset=['peak_utc_corrected','event_peaktime'],inplace=True) #just in case any ssw latest events/flare detective results overlap
+        imlinks=[f"[image]({imurl})" if imurl != '' else '' for imurl in df.gs_imageurl]
+        movlinks=[f"[movie]({imurl})" if imurl != '' else '' for imurl in df.movie_url]
+        df['frm_name']=[n[:n.find('-')] if isinstance(n,str) else None for n in df.frm_name] #shorten it
+        df['AIA image_links']=imlinks
+        df['AIA movie_links']=movlinks
+        df=df.apply(pd.to_numeric,errors='ignore')
+        df['event_peaktime']=pd.to_datetime(df.event_peaktime).astype(str)
+        df['peak_utc_corrected']=pd.to_datetime(df.peak_utc_corrected).astype(str) #for 0 padding of hour...
+        df.drop(columns=['gs_imageurl','movie_url'],inplace=True)
+        #df['goes_proxy']=goes_proxy(fitdf,df.peak_counts_corrected)
+        #table_cols2 = get_flaretable_columns(fdf)
+        #table_data2 = fdf.to_dict('records')
+    else:
+        df.columns=df.iloc[0]
+        df.drop([0],inplace=True)
+        df=df.apply(pd.to_numeric,errors='ignore')
+    return df #,table_cols,table_data,fdf,table_cols2,table_data2
 
 def format_datatable(df, flatten_char = '_',cols=False,unit=False,sphere=False):
     '''Create multiindex dataframe (non-native to Dash), format data given desired units and coordinate system'''
