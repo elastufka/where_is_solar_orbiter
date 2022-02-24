@@ -305,15 +305,29 @@ def display_content(table_cols2,spacecraft, cbodies, start_date,end_date,selecte
 @app.callback(Output('flares', 'figure'), [Input('flare_tab', 'value'),Input('tbl2','data'),Input('tbl2','sort_by'),Input('spacecraft','value'),Input('celestial bodies','value'),Input('msize', 'value'),Input('nresults','value'),Input('limit','on')])
 def display_content(selected_tab,table_data,sortby,spacecraft, cbodies,msize,nresults,limit):
     '''take input for figure directly from data table, so any sorting is reflected '''
-    table_df=pd.DataFrame(table_data)
-    if sortby is not None and limit:
+    if len(table_data) !=0:
+        table_df=pd.DataFrame(table_data).sort_values('peak_utc_corrected')
         asc=True
-        if sortby[0]['direction']!='asc':
-            asc=False
-        table_df=table_df.sort_values(sortby[0]['column_id'],ascending=asc).head(nresults)
-    if selected_tab == 'flare':
-        return locations_on_disk(table_df, spacecraft,cbodies,msize=msize)
-    return {}
+        if limit:
+            if sortby is not None:
+                if sortby[0]['direction']!='asc':
+                    asc=False
+                table_df=table_df.sort_values(sortby[0]['column_id'],ascending=asc)
+            table_df=table_df.head(nresults)
+        if selected_tab == 'flare':
+            return locations_on_disk(table_df, spacecraft,cbodies,msize=msize)
+    else:
+        return {"layout": {
+                "xaxis": {"visible": False},
+                "yaxis": {"visible": False},
+                "annotations": [{
+                        "text": "No matching data found",
+                        "xref": "paper",
+                        "yref": "paper",
+                        "showarrow": False,
+                        "font": {"size": 28}
+                    }]
+            }}
 
 if __name__ == '__main__':
     app.run_server(debug=True)

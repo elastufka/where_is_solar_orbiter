@@ -142,7 +142,6 @@ def get_flaretable_columns(fdf):
 
 def locations_on_disk(df, spacecraft,cbodies,cdict={'Solar Orbiter POV':'darkgoldenrod','Earth POV':'green','STEREO A POV':'magenta','bepi':'lightseagreen','mars':'firebrick','venus':'cyan'},msize='counts'):
     ''' Plot cartesian flare locations on solar disk using Plotly. '''
-
     stitles=['Earth POV']
     lkeys=[('hpc_x','hpc_y')]
     if 'SOLO' in spacecraft:
