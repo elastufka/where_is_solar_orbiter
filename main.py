@@ -143,7 +143,7 @@ app.layout = html.Div([html.Div(children=dbc.Container([html.H1("Where is Solar 
         html.P('results per page',style={'width': '10%', 'display': 'inline-block','verticalAlign':'middle','margin-left':'20px'}),
         dcc.Input(id='nresults',type='number',value=page_size,style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
         html.P('limit plot results',style={'text-align':'right','width': '10%', 'display': 'inline-block','verticalAlign':'middle'}),
-        daq.BooleanSwitch(id='limit',on=False,color="#839496",style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
+        daq.BooleanSwitch(id='limit',on=True,color="#839496",style={'width': '5%', 'display': 'inline-block','verticalAlign':'middle'}),
         ]),
     html.Div(
     dash_table.DataTable(id='tbl2',data=table_data2,columns=table_cols2,
@@ -308,7 +308,7 @@ def display_content(selected_tab,table_data,sortby,spacecraft, cbodies,msize,nre
     if len(table_data) !=0:
         table_df=pd.DataFrame(table_data).sort_values('peak_utc_corrected')
         asc=True
-        if limit:
+        if not limit:
             if sortby is not None:
                 if sortby[0]['direction']!='asc':
                     asc=False
