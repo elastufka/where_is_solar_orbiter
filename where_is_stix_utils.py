@@ -46,7 +46,7 @@ def process_df(df,i):
         cols=pd.MultiIndex.from_arrays([np.array(first_row.values),np.array(second_row.values)])
         df.columns=cols
         #drop header rows
-        df.drop([0,1],inplace=True)
+        df=df.drop([0,1])
         df=df.apply(pd.to_numeric,errors='ignore')
         df[('Date','-')]=pd.to_datetime(df.Date['-'])
 
@@ -54,9 +54,9 @@ def process_df(df,i):
     elif i==1:
         excl_cols=['LC0_BKG','_id','goes','peak_UTC','CFL_X_arcsec','CFL_Y_arcsec','total_signal_counts','total_counts','peak_counts','flare_id','GOES_flux','LC0_peak_counts_4sec','solo_r','peak_utc','date_obs','hpc_bbox','frm_identifier','fl_peaktempunit','fl_peakemunit','fl_peakflux','fl_peakfluxunit','fl_peakem','fl_peaktemp','obs_dataprepurl','gs_thumburl','x_px','y_px','rotated_x_px','rotated_y_px','visible_from_SOLO','start_unix','end_unix','STIX_AIA_timedelta','STIX_AIA_timedelta_abs','stereo_z','x_arcsec','y_arcsec','x_deg','y_deg']
         df.columns=df.iloc[0]
-        df.drop([0],inplace=True)
-        df.drop(columns=excl_cols,inplace=True)
-        df.drop_duplicates(subset=['peak_utc_corrected','event_peaktime'],inplace=True) #just in case any ssw latest events/flare detective results overlap
+        df=df.drop([0])
+        df=df.drop(columns=excl_cols)
+        df=df.drop_duplicates(subset=['peak_utc_corrected','hpc_x','hpc_y']) #just in case any ssw latest events/flare detective results overlap
         imlinks=[f"[image]({imurl})" if imurl != '' else '' for imurl in df.gs_imageurl]
         movlinks=[f"[movie]({imurl})" if imurl != '' else '' for imurl in df.movie_url]
         df['frm_name']=[n[:n.find('-')] if isinstance(n,str) else None for n in df.frm_name] #shorten it
